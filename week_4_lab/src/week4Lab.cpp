@@ -1,158 +1,157 @@
 #include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/laser_scan.hpp>
 #include <geometry_msgs/msg/twist.hpp>
-#include <nav_msgs/msg/odometry.hpp>
-#include <tf2/LinearMath/Quaternion.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
-#include <random>
-#include <chrono>
-#include <cmath>
+#include <opencv2/opencv.hpp>
+#include <vector>
 
-class DeadReckoningNode : public rclcpp::Node
-{
+class ScanToImageNode : public rclcpp::Node {
 public:
-    DeadReckoningNode() : Node("dead_reckoning_node"), gen_(rd_()), noise_dist_(0.0, 0.01)
-    {
-        linear_speed_ = this->declare_parameter("linear_speed", 0.2);
-        angular_speed_ = this->declare_parameter("angular_speed", 0.0);
-        distance_ = this->declare_parameter("distance", 2.0);
-        direction_ = this->declare_parameter("direction", "forward");
-
-        cmd_vel_pub_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
-        odom_noisy_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("odom_noisy", 10);
-        odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
-            "odom", 10, std::bind(&DeadReckoningNode::odom_callback, this, std::placeholders::_1));
-
-        timer_ = this->create_wall_timer(
-            std::chrono::milliseconds(100),
-            std::bind(&DeadReckoningNode::timer_callback, this));
-
-        initialized_ = false;
-        last_time_ = this->now();
+    ScanToImageNode() : Node("scan_to_image_node"), angle_difference_(0.0), relative_orientaion_(0.0) {
+        scan_subscriber_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
+            "/scan", 10, std::bind(&ScanToImageNode::scanCallback, this, std::placeholders::_1));
+        cmd_publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
+        RCLCPP_INFO(this->get_logger(), "Scan to Image Node started.");
     }
 
 private:
-    void odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
-    {
-        if (!initialized_)
-        {
-            initial_pose_x_ = msg->pose.pose.position.x;
-            initial_pose_y_ = msg->pose.pose.position.y;
+    void scanCallback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
+        // Convert LaserScan to cv::Mat (polar coordinates to Cartesian)
+        cv::Mat img = laserScanToMat(msg);
 
-            tf2::Quaternion q(
-                msg->pose.pose.orientation.x,
-                msg->pose.pose.orientation.y,
-                msg->pose.pose.orientation.z,
-                msg->pose.pose.orientation.w);
-            tf2::Matrix3x3 m(q);
-            double roll, pitch; // Temporary variables to hold roll and pitch
-            m.getRPY(roll, pitch, initial_pose_theta_);
+        if (!first_image_captured_) {
+            first_image_ = img.clone();
+            first_image_captured_ = true;
+            // Display the first image
+            cv::imshow("First Image", first_image_);
+            cv::waitKey(1);  // Add this to process GUI events and update the window
+            // Rotate the robot by publishing to cmd_vel
+            rotateRobot();
+        } else if (!second_image_captured_) {
+            second_image_ = img.clone();
+            second_image_captured_ = true;
+            // Display the second image
+            cv::imshow("Second Image", second_image_);
+            cv::waitKey(1);  // Add this to process GUI events and update the window
+            // Calculate the change in yaw using cv::transform
+        } else {
+            first_image_ = second_image_.clone();
+            second_image_ = img.clone();
+            // Display the new second image
+            cv::imshow("Second Image", second_image_);
+            cv::waitKey(1);  // Add this to process GUI events and update the window
 
-            current_pose_x_ = initial_pose_x_;
-            current_pose_y_ = initial_pose_y_;
-            current_pose_theta_ = initial_pose_theta_;
-
-            initialized_ = true;
+            calculateYawChange();
+            relative_orientaion_ = relative_orientaion_ + angle_difference_;
+            RCLCPP_INFO(this->get_logger(), "Relative Orientation: %f", relative_orientaion_);
         }
     }
 
-    void timer_callback()
-    {
-        if (!initialized_)
+    cv::Mat laserScanToMat(const sensor_msgs::msg::LaserScan::SharedPtr& scan) {
+        // Parameters
+        int img_size = 500;
+        float max_range = scan->range_max;
+        cv::Mat image = cv::Mat::zeros(img_size, img_size, CV_8UC1);
+
+        for (size_t i = 0; i < scan->ranges.size(); i++) {
+            float range = scan->ranges[i];
+            if (range > scan->range_min && range < scan->range_max) {
+                float angle = scan->angle_min + i * scan->angle_increment;
+                int x = static_cast<int>((range * cos(angle)) * img_size / (2 * max_range)) + img_size / 2;
+                int y = static_cast<int>((range * sin(angle)) * img_size / (2 * max_range)) + img_size / 2;
+                if (x >= 0 && x < img_size && y >= 0 && y < img_size) {
+                    image.at<uchar>(y, x) = 255;
+                }
+            }
+        }
+        return image;
+    }
+
+
+
+
+    void rotateRobot() {
+        auto twist_msg = geometry_msgs::msg::Twist();
+        twist_msg.angular.z = 1.0;  // Rotate with some angular velocity
+        cmd_publisher_->publish(twist_msg);
+
+        // Sleep for a while to allow the robot to rotate
+        rclcpp::sleep_for(std::chrono::seconds(2));
+
+        // Stop rotation
+        twist_msg.angular.z = 0.0;
+        cmd_publisher_->publish(twist_msg);
+    }
+
+    void calculateYawChange() {
+        // Detect and match features between the first and second images
+        std::vector<cv::Point2f> srcPoints, dstPoints;
+        detectAndMatchFeatures(first_image_, second_image_, srcPoints, dstPoints);
+
+        if (srcPoints.size() < 3 || dstPoints.size() < 3) {
+            RCLCPP_ERROR(this->get_logger(), "Not enough points for affine transformation.");
             return;
-
-        auto current_time = this->now();
-        auto delta_time = (current_time - last_time_).seconds();
-
-        double delta_x = linear_speed_ * delta_time * cos(angular_speed_ * delta_time);
-        double delta_y = linear_speed_ * delta_time * sin(angular_speed_ * delta_time);
-        if (direction_ == "backward")
-        {
-            delta_x = -delta_x;
-            delta_y = -delta_y;
         }
 
-        current_pose_x_ += delta_x;
-        current_pose_y_ += delta_y;
-        current_pose_theta_ += angular_speed_ * delta_time;
-        // write me code that wrap theta angle
-
-
-
-        current_pose_theta_ = normalize_angle(current_pose_theta_);
-
-        double traveled_distance = std::hypot(current_pose_x_ - initial_pose_x_, current_pose_y_ - initial_pose_y_);
-
-        if (traveled_distance >= distance_)
-        {
-            cmd_vel_pub_->publish(geometry_msgs::msg::Twist());
-        }
-        else
-        {
-            publish_noisy_odometry(current_time);
-            publish_cmd_vel();
+        try {
+            cv::Mat transform_matrix = cv::estimateAffinePartial2D(srcPoints, dstPoints);
+            if (transform_matrix.empty()) {
+                RCLCPP_ERROR(this->get_logger(), "Transformation matrix estimation failed.");
+            } else {
+                // Extract the rotation angle from the transformation matrix
+                angle_difference_ = atan2(transform_matrix.at<double>(1, 0), transform_matrix.at<double>(0, 0));
+                angle_difference_ = angle_difference_ * 180.0 / CV_PI;
+                RCLCPP_INFO(this->get_logger(), "Estimated yaw angle change: %f degrees", angle_difference_);
+            }
+        } catch (const cv::Exception& e) {
+            RCLCPP_ERROR(this->get_logger(), "Error in estimateAffinePartial2D: %s", e.what());
         }
 
-        last_time_ = current_time;
     }
 
-    void publish_noisy_odometry(const rclcpp::Time& current_time)
-    {
-        current_pose_x_ = current_pose_x_ + noise_dist_(gen_);
-        current_pose_y_ = current_pose_y_ + noise_dist_(gen_);
-        current_pose_theta_ = current_pose_theta_ + noise_dist_(gen_);
+    void detectAndMatchFeatures(const cv::Mat& img1, const cv::Mat& img2,
+                                std::vector<cv::Point2f>& srcPoints, std::vector<cv::Point2f>& dstPoints) {
+        cv::Ptr<cv::ORB> orb = cv::ORB::create();
+        std::vector<cv::KeyPoint> keypoints1, keypoints2;
+        cv::Mat descriptors1, descriptors2;
 
-        tf2::Quaternion q;
-        q.setRPY(0.0, 0.0, current_pose_theta_);
+        orb->detectAndCompute(img1, cv::noArray(), keypoints1, descriptors1);
+        orb->detectAndCompute(img2, cv::noArray(), keypoints2, descriptors2);
 
-        nav_msgs::msg::Odometry odom_noisy;
-        odom_noisy.header.stamp = current_time;
-        odom_noisy.header.frame_id = "odom";
-        odom_noisy.child_frame_id = "base_link";
-        odom_noisy.pose.pose.position.x = current_pose_x_;
-        odom_noisy.pose.pose.position.y = current_pose_y_;
-        odom_noisy.pose.pose.orientation = tf2::toMsg(q);
-        odom_noisy_pub_->publish(odom_noisy);
+        cv::BFMatcher matcher(cv::NORM_HAMMING);
+        std::vector<cv::DMatch> matches;
+        matcher.match(descriptors1, descriptors2, matches);
+
+        // Sort matches based on distance (lower distance means better match)
+        std::sort(matches.begin(), matches.end(), [](const cv::DMatch& a, const cv::DMatch& b) {
+            return a.distance < b.distance;
+        });
+
+        // Determine the number of top matches to keep (30% of total matches)
+        size_t numGoodMatches = static_cast<size_t>(matches.size() * 0.15);
+
+        // Keep only the best matches (top 30%)
+        std::vector<cv::DMatch> goodMatches(matches.begin(), matches.begin() + numGoodMatches);
+
+        for (const auto& match : matches) {
+            srcPoints.push_back(keypoints1[match.queryIdx].pt);
+            dstPoints.push_back(keypoints2[match.trainIdx].pt);
+        }
     }
 
-    void publish_cmd_vel()
-    {
-        geometry_msgs::msg::Twist cmd_vel;
-        cmd_vel.linear.x = (direction_ == "forward") ? linear_speed_ : -linear_speed_;
-        cmd_vel.angular.z = angular_speed_;
-        cmd_vel_pub_->publish(cmd_vel);
-    }
+    rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_subscriber_;
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_publisher_;
 
-    double normalize_angle(double angle)
-    {
-        while (angle >= 360.0) angle -= 360.0;
-        while (angle < 0.0) angle += 360.0;
-        return angle;
-    }
+    cv::Mat first_image_, second_image_;
+    bool first_image_captured_ = false;
+    bool second_image_captured_ = false;
 
-    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub_;
-    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_noisy_pub_;
-    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
-    rclcpp::TimerBase::SharedPtr timer_;
-
-    double linear_speed_;
-    double angular_speed_;
-    double distance_;
-    std::string direction_;
-
-    bool initialized_;
-    double initial_pose_x_, initial_pose_y_, initial_pose_theta_;
-    double current_pose_x_, current_pose_y_, current_pose_theta_;
-    rclcpp::Time last_time_;
-
-    std::random_device rd_;
-    std::mt19937 gen_;
-    std::normal_distribution<> noise_dist_;
+    double angle_difference_;
+    double relative_orientaion_ = 0.0;
 };
 
-int main(int argc, char **argv)
-{
+int main(int argc, char* argv[]) {
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<DeadReckoningNode>());
+    rclcpp::spin(std::make_shared<ScanToImageNode>());
     rclcpp::shutdown();
     return 0;
 }
