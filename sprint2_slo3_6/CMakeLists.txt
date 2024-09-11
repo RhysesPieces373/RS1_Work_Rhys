@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(map_processor_node)
+project(sprint2_slo3_6)
 
 # Find dependencies
 find_package(ament_cmake REQUIRED)
@@ -7,6 +7,7 @@ find_package(rclcpp REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
 # Specify C++ standard
 set(CMAKE_CXX_STANDARD 17)
@@ -19,7 +20,7 @@ include_directories(
 )
 
 # Create the executable
-add_executable(${PROJECT_NAME} src/map_processor_node.cpp)
+add_executable(${PROJECT_NAME} src/node.cpp)
 
 # Link libraries
 target_link_libraries(${PROJECT_NAME}
@@ -31,6 +32,7 @@ ament_target_dependencies(${PROJECT_NAME}
   rclcpp
   nav_msgs
   sensor_msgs
+  geometry_msgs
 )
 
 # Install the executable
