@@ -1,11 +1,15 @@
 #include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/float64.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgcodecs.hpp>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <iostream>
 #include <mutex>
+#include <cmath>
 
 class MapProcessorNode : public rclcpp::Node
 {
@@ -26,7 +30,9 @@ public:
             "/odom", 10, std::bind(&MapProcessorNode::odomCallback, this, std::placeholders::_1));
 
         vel_pub_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
-        
+        yaw_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("/yaw", 10);
+        timer_ = this->create_wall_timer(std::chrono::milliseconds(200), std::bind(&MapProcessorNode::moveRobot, this));
+
         cv::namedWindow(WINDOW1, cv::WINDOW_AUTOSIZE);
     }
 
@@ -34,6 +40,7 @@ private:
     // Callback to handle odometry messages and capture the initial pose
     void odomCallback(const nav_msgs::msg::Odometry::SharedPtr odomMsg)
     {   
+        odom_time_ = odomMsg->header.stamp;
         current_pose_ = odomMsg->pose.pose;  // Store the initial pose 
         if(map_create_){
             robot_x = static_cast<int>((current_pose_.position.x - grid_->info.origin.position.x)/grid_->info.resolution);
@@ -96,15 +103,27 @@ private:
 
     void moveRobot() {
         auto twist_msg = geometry_msgs::msg::Twist();
-        twist_msg.angular.z = 0.3;  // Rotate with some angular velocity
+        twist_msg.angular.z = 0.087;  // Rotate with some angular velocity
         vel_pub_->publish(twist_msg);
+    }
 
-        // Sleep for a while to allow the robot to rotate
-        rclcpp::sleep_for(std::chrono::seconds(2));
+    double computeRMSE(){
+        double measured;
+        double prediction = angle_difference_;
+        num_of_datapoints++;
+        tf2::Quaternion q(
+                current_pose_.orientation.x,
+                current_pose_.orientation.y,
+                current_pose_.orientation.z,
+                current_pose_.orientation.w);
+        tf2::Matrix3x3 m(q);
+        double roll, pitch; // Temporary variables to hold roll and pitch
+        
+        m.getRPY(roll, pitch, measured);
 
-        // Stop rotation
-        twist_msg.angular.z = 0.0;
-        vel_pub_->publish(twist_msg);
+        sum_of_squares += ((measured - prediction) * (measured - prediction)); 
+
+        return (sqrt(sum_of_squares/num_of_datapoints));
     }
 
 
@@ -127,8 +146,44 @@ private:
             } else {
                 // Extract the rotation angle (yaw) from the transformation matrix
                 angle_difference_ = atan2(transform_matrix.at<double>(1, 0), transform_matrix.at<double>(0, 0));
+                tf2::Quaternion quaternion;
+                angle_difference_ = normalize_angle(angle_difference_);
+                angle_difference_ = -angle_difference_;
+
+                double measured;
+                tf2::Quaternion q(
+                    current_pose_.orientation.x,
+                    current_pose_.orientation.y,
+                    current_pose_.orientation.z,
+                    current_pose_.orientation.w);
+                tf2::Matrix3x3 m(q);
+                double roll, pitch; // Temporary variables to hold roll and pitch
+                
+                m.getRPY(roll, pitch, measured);
+
+                std::cout << "\nGround Truth yaw value: " << measured << std::endl;
+                std::cout << "Estimated yaw value: " << angle_difference_ << std::endl;
+                std::cout << "RMSE value: " << computeRMSE() << std::endl;
+
+                quaternion.setRPY(0,0,angle_difference_);
+
+
+                quaternion=quaternion.normalize();
+
+                nav_msgs::msg::Odometry msg;
+                msg.header.stamp = odom_time_;
+                msg.header.frame_id = "map";
+                msg.child_frame_id = "base_link";
+                msg.pose.pose = current_pose_;
+                msg.pose.pose.orientation.x = quaternion.x();
+                msg.pose.pose.orientation.y = quaternion.y();
+                msg.pose.pose.orientation.z = quaternion.z();
+                msg.pose.pose.orientation.w = quaternion.w();
+                yaw_pub_->publish(msg);
+                
                 angle_difference_ = angle_difference_ * 180.0 / CV_PI;  // Convert to degrees
                 RCLCPP_INFO(this->get_logger(), "Estimated yaw angle change: %f degrees", angle_difference_);
+                
             }
         } catch (const cv::Exception& e) {
             RCLCPP_ERROR(this->get_logger(), "Error in estimateAffinePartial2D: %s", e.what());
@@ -213,13 +268,13 @@ private:
         });
 
         // Determine the number of top matches to keep (15% of total matches)
-        size_t numGoodMatches = static_cast<size_t>(goodMatches.size() * 0.30);
+        size_t numGoodMatches = static_cast<size_t>(goodMatches.size() * 0.20);
 
         // Keep only the best matches (top 15%)
         std::vector<cv::DMatch> gooderMatches(goodMatches.begin(), goodMatches.begin() + numGoodMatches);
 
         // Populate srcPoints and dstPoints with the best matches
-        for (const auto& match : gooderMatches) {
+        for (const auto& match : goodMatches) {
             srcPoints.push_back(keypoints1[match.queryIdx].pt);
             dstPoints.push_back(keypoints2[match.trainIdx].pt);
         }
@@ -252,6 +307,13 @@ private:
     }
 
     
+    double normalize_angle(double angle)
+    {
+        while (angle > M_PI) angle -= 2.0 * M_PI;
+        while (angle < -M_PI) angle += 2.0 * M_PI;
+        return angle;
+    }
+
     //scale up using 2 ogti functinos. one runs at the start for full map, one runs each time movement occurs to generate local map data for each window. reducing process power requirements. 
     // Convert occupancy grid to binary image
     void occupancyGridToImage(const nav_msgs::msg::OccupancyGrid::SharedPtr grid)
@@ -327,6 +389,8 @@ private:
     rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_subscriber_;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_subscription_;
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr vel_pub_;
+    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr yaw_pub_;
+    rclcpp::TimerBase::SharedPtr timer_; 
 
     // Images
     cv::Mat m_temp_img;
@@ -335,6 +399,10 @@ private:
     cv::Mat edges1;
     cv::Mat edges1_masked_;
     cv::Mat edges1_upscaled_;
+
+    // RMSE computation variables
+    double sum_of_squares = 0;
+    int num_of_datapoints = 0;
 
     // Map and pose properties
 
@@ -345,6 +413,7 @@ private:
     unsigned int size_x;
     unsigned int size_y;
     geometry_msgs::msg::Pose current_pose_;
+    rclcpp::Time odom_time_;
     nav_msgs::msg::OccupancyGrid::SharedPtr grid_;
    
     std::mutex odom_mutex_;
@@ -352,7 +421,7 @@ private:
     bool map_create_;
     double angle_difference_;  // Yaw angle difference (in degrees)
 
-    int window_size = 60;
+    int window_size = 100;
     int half_window = window_size/2;
     int robot_x;
     int robot_y;

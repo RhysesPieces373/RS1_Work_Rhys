@@ -8,6 +8,9 @@ find_package(nav_msgs REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+
 
 # Specify C++ standard
 set(CMAKE_CXX_STANDARD 17)
@@ -33,6 +36,8 @@ ament_target_dependencies(${PROJECT_NAME}
   nav_msgs
   sensor_msgs
   geometry_msgs
+  tf2
+  tf2_geometry_msgs
 )
 
 # Install the executable
