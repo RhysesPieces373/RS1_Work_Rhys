@@ -223,7 +223,7 @@ private:
         }
         // Compute F matrix using RANSAC
         std::vector<uchar> inliers(points1.size(),0);
-        cv::Mat fundemental= cv::findFundamentalMat(cv::Mat(points1),cv::Mat(points2),inliers,cv::FM_RANSAC,1,0.99); // confidence probability
+        cv::Mat fundemental= cv::findFundamentalMat(cv::Mat(points1),cv::Mat(points2),inliers,cv::FM_RANSAC,3,0.99); // confidence probability
         // extract the surviving (inliers) matches
         std::vector<uchar>::const_iterator itrIn= inliers.begin();
         std::vector<cv::DMatch>::const_iterator itrM= matches.begin();

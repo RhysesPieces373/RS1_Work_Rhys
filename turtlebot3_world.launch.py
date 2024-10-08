@@ -36,7 +36,7 @@ def generate_launch_description():
     world = os.path.join(
         get_package_share_directory('turtlebot3_gazebo',),
         'worlds',
-        'turtlebot3_world.world',
+        'ParkWorld.world',
     )
     # world = os.path.join(
     #     '\home\xad\officeenvironment.world'  
