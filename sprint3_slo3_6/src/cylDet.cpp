@@ -10,11 +10,31 @@
 #include <cmath>
 #include <vector>
 
+
+/*!
+ *  \brief Cylinder Detector ROS2 Node
+ *  \details
+ *  This class is a ROS2 node that allows a robot (turtlebot3) to detect 30cm cylinders.\n
+ *  \author Rhys Darcy
+ *  \version 1.0
+ *  \date 08/10/2024
+ *  \bug None found as of 08/10/2024
+ *  \warning Will not work if gazebo and a map on RViz2 is not open
+ */
+
 class CylinderDetector : public rclcpp::Node
 {
 public:
+
+    /**
+     * @brief Constructor for the CylinderDetector node.
+     * 
+     * Initializes the node, sets up the laser scan subscriber, marker publisher, pose publisher,
+     * and transform broadcaster. It also initializes the cylinder's size parameters which can be 
+     * changed here to adjust for additinal sizes.
+     */
     CylinderDetector()
-    : Node("cylinder_detector"), cylinder_diameter_(0.30), 
+    : Node("cylinder_detector"), cylDiameter_(0.30), 
     tf_buffer_(std::make_shared<rclcpp::Clock>(RCL_ROS_TIME)),  // Correct initialization of tf_buffer_
     tf_listener_(tf_buffer_)                                    // Initialize tf_listener_ with tf_buffer_
     {
@@ -32,10 +52,21 @@ public:
         tf_BC_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
 
         // Cylinder parameter
-        cylinder_radius_ = cylinder_diameter_ / 2.0;
+        cylRadius_ = cylDiameter_ / 2.0;
     }
 
 private:
+
+    /**
+     * @brief Callback function used to process/use laser scan message data
+     * 
+     * This function searches for cylinders in the robot's general vicinity after receiving 
+     * a LaserScan through /scan. Once detected, the function will then publish a marker
+     * and broadcast a transform 
+     * 
+     * @param[in] scan_msg A message containing the most recent LaserScan from /scan
+     * 
+     */
     void scanCallback(const sensor_msgs::msg::LaserScan::SharedPtr scan_msg)
     {
         std::vector<float> ranges = scan_msg->ranges;
@@ -74,6 +105,19 @@ private:
         }
     }
 
+    /**
+     * @brief Detects a cylinder from Cartesian coordinates and returns its index
+     * 
+     * This function searches through vectors of Cartesian points from a laser scan
+     * and groups them into continuous clusters based on how close they are. If a cluster's 
+     * width is within a certain threshold of +-0.05m of the 0.3m cylinder, it is detected
+     * and its index is returned.
+     * 
+     * @param[in] xs vector of Cartesian x-coordinates
+     * @param[in] ys vector of Cartesian y-coordinates
+     * 
+     * \return Index of the cylinder in the LaserScan
+     */
     int detectCylinderObject(const std::vector<double>& xs, const std::vector<double>& ys)
     {
         size_t n = xs.size();
@@ -84,8 +128,6 @@ private:
         {
             distances[i] = std::sqrt(std::pow(xs[i + 1] - xs[i], 2) + std::pow(ys[i + 1] - ys[i], 2));
         }
-// Threshold to consider consecutive points as part of the same cluster
-        double distance_threshold = 0.15;  // 15 cm
 
         // Loop over the points and find clusters
         for (size_t i = 0; i < n - 1; ++i)
@@ -96,7 +138,7 @@ private:
             cluster_indices.push_back(i);
 
             // Continue adding points to the cluster as long as the distance is below the threshold
-            while (i < n - 1 && distances[i] < distance_threshold)
+            while (i < n - 1 && distances[i] < cylRadius_)
             {
                 cluster_indices.push_back(i + 1);  // Add the next point to the cluster
                 ++i;  // Move to the next point
@@ -121,6 +163,17 @@ private:
         return -1;  // No cylinder found
     }
 
+    /**
+     * @brief Publishes a cylinder visualisation_msgs marker at (x,y) in RViz2
+     * 
+     * This function creates and publishes a cylinder marker at (x,y), which is the detected 
+     * cylinder's position. This position is also transformed from the robot's base_link frame 
+     * to the map's frame.
+     * 
+     * @param[in] x estimated x-coordinate of the cylinder object
+     * @param[in] y estimated y-coordinate of the cylinder object
+     * 
+     */
     void publishCylinderMarker(double x, double y)
     {
         // Create RViz Marker from visualisation msgs
@@ -131,8 +184,8 @@ private:
         cylMarker.action = visualization_msgs::msg::Marker::ADD;
 
         // Set the scale and color of the cylinder marker
-        cylMarker.scale.x = cylinder_diameter_;
-        cylMarker.scale.y = cylinder_diameter_;
+        cylMarker.scale.x = cylDiameter_;
+        cylMarker.scale.y = cylDiameter_;
         cylMarker.scale.z = 1.0;
         cylMarker.color.r = 1.0;
         cylMarker.color.g = 0.0;
@@ -176,6 +229,16 @@ private:
         }
     }
 
+    /**
+     * @brief Broadcasts transform of the detected cylinder
+     * 
+     * This function publishes a cylinder transform at (x,y) between the robot's "base_link" 
+     * and the cylinder's position to RViz2.
+     * 
+     * @param[in] x estimated x-coordinate of the cylinder object
+     * @param[in] y estimated y-coordinate of the cylinder object
+     * 
+     */
     void publishCylinderTF(double x, double y)
     {
         // Create and broadcast a TransformStamped for the detected cylinder
@@ -192,16 +255,16 @@ private:
         tf_BC_->sendTransform(tfStamped);
     }
 
-    rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
-    rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr cyl_marker_pub_;
-    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr cyl_pose_pub_;
-    std::shared_ptr<tf2_ros::TransformBroadcaster> tf_BC_;
+    std::shared_ptr<tf2_ros::TransformBroadcaster> tf_BC_; ///< base_link to map transform broadcaster
+    rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_; ///< Subscriber to /scan LaserScan messages
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr cyl_pose_pub_; ///< Publisher for Cylinder poses through geometry_msgs PoseStamped
+    rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr cyl_marker_pub_; ///< Publisher for Cylinder visualisation_msgs markers
 
-    tf2_ros::Buffer tf_buffer_; 
-    tf2_ros::TransformListener tf_listener_; 
+    tf2_ros::Buffer tf_buffer_; ///< Transform storage buffer
+    tf2_ros::TransformListener tf_listener_; ///< Incoming transform listener
 
-    double cylinder_diameter_; // Known diameter of the placed cylinder obstacle
-    double cylinder_radius_;
+    double cylDiameter_; ///< Known diameter of the placed cylinder obstacle
+    double cylRadius_; ///< Known radius of the placed cylinder obstacle
 };
 
 int main(int argc, char** argv)

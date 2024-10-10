@@ -26,6 +26,7 @@ from launch.substitutions import LaunchConfiguration
 
 
 def generate_launch_description():
+    WORLD_FILE = os.environ['WORLD_FILE']
     launch_file_dir = os.path.join(get_package_share_directory('turtlebot3_gazebo'), 'launch')
     pkg_gazebo_ros = get_package_share_directory('gazebo_ros')
 
@@ -33,20 +34,18 @@ def generate_launch_description():
     x_pose = LaunchConfiguration('x_pose', default='-2.0')
     y_pose = LaunchConfiguration('y_pose', default='-0.5')
 
-    world = os.path.join(
-        get_package_share_directory('turtlebot3_gazebo',),
+    """world = os.path.join(
+        get_package_share_directory('turtlebot3_gazebo'),
         'worlds',
-        'ParkWorld.world',
+        'turtlebot3_world.world'
     )
-    # world = os.path.join(
-    #     '\home\xad\officeenvironment.world'  
-    # )
+    """
 
     gzserver_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_gazebo_ros, 'launch', 'gzserver.launch.py')
         ),
-        launch_arguments={'world': world}.items()
+        launch_arguments={'world': WORLD_FILE}.items()
     )
 
     gzclient_cmd = IncludeLaunchDescription(

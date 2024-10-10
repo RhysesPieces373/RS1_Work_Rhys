@@ -1,0 +1,21 @@
+This program requires the use of the gazebo simulator and ros2. This program will detect a 30cm (0.\+3m)\hypertarget{index_ac_doc_start}{}\doxysection{How to Initialise//\+Install}\label{index_ac_doc_start}
+To initialise sim\+: \begin{DoxyVerb}colcon build --packages-select sprint3_slo3_6
+\end{DoxyVerb}
+
+
+In three different terminals, enter\+: \begin{DoxyVerb}source ~/ros2_ws/install/setup.bash
+\end{DoxyVerb}
+
+
+In one terminal each (when there is a map in your home directory (below) and have the required launch file), enter\+:  \begin{DoxyVerb}export TURTLEBOT3_MODEL=waffle_pi 
+ros2 launch turtlebot3_gazebo turtlebot3_park.launch.py
+
+ros2 run sprint3_slo3_6 cyl_det
+
+export TURTLEBOT3_MODEL=waffle_pi 
+ros2 launch turtlebot3_navigation2 navigation2.launch.py use_sim_time:=true map:=$HOME/my_map.yaml\end{DoxyVerb}
+\hypertarget{index_ac_doc_functionality}{}\doxysection{Program functionality}\label{index_ac_doc_functionality}
+This program utilises the Laser\+Scan message from the /scan topic to detect 30cm cylinders around the turtlebot3. (You will have to create a model for the 30cm cylinder manually).
+
+The functionality is shown in the below pictures\+: \hypertarget{index_ac_doc_images}{}\doxysection{Images}\label{index_ac_doc_images}
+    

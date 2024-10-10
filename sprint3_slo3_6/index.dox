@@ -1,0 +1,54 @@
+/*!
+
+*/
+
+// without this gap between two doxygen definition, the last group does not get
+// populated properly for some reason.
+
+/*!
+@mainpage Sprint 3 - SLO 3.6 - Rhys Darcy 24447183
+
+This program requires the use of the gazebo simulator and ros2. 
+This program will detect a 30cm (0.3m) 
+
+@section ac_doc_start How to Initialise//Install
+
+To initialise sim: 
+\verbatim
+colcon build --packages-select sprint3_slo3_6
+\endverbatim
+
+In three different terminals, enter:
+\verbatim
+source ~/ros2_ws/install/setup.bash
+\endverbatim
+
+In one terminal each (when there is a map in your home directory (below) and have the required launch file), enter:
+\image html mapLoc.png "Location where map should be placed (Home)"
+\verbatim
+export TURTLEBOT3_MODEL=waffle_pi 
+ros2 launch turtlebot3_gazebo turtlebot3_park.launch.py
+
+ros2 run sprint3_slo3_6 cyl_det
+
+export TURTLEBOT3_MODEL=waffle_pi 
+ros2 launch turtlebot3_navigation2 navigation2.launch.py use_sim_time:=true map:=$HOME/my_map.yaml
+
+\endverbatim
+
+@section ac_doc_functionality Program functionality
+
+This program utilises the LaserScan message from the /scan topic to detect 30cm cylinders 
+around the turtlebot3. (You will have to create a model for the 30cm cylinder manually).
+
+The functionality is shown in the below pictures:
+@section ac_doc_images Images
+\image html Environment.png "Sample Environment for node use"
+\image html Cylinder.png "Placed Cylinder in Environment"
+\image html Close.png "Robot within detection range to cylinder"
+\image html Detect.png "RViz2 view of robot detecting cylinder and publishing marker on map"
+
+*/
+
+@section ac_doc_expectations Expectations
+Due to the inner workings of the program 

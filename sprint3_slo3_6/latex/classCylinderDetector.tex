@@ -1,0 +1,261 @@
+\hypertarget{classCylinderDetector}{}\doxysection{Cylinder\+Detector Class Reference}
+\label{classCylinderDetector}\index{CylinderDetector@{CylinderDetector}}
+
+
+Cylinder Detector ROS2 Node.  
+
+
+
+
+Inheritance diagram for Cylinder\+Detector\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=179pt]{classCylinderDetector__inherit__graph}
+\end{center}
+\end{figure}
+
+
+Collaboration diagram for Cylinder\+Detector\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=179pt]{classCylinderDetector__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classCylinderDetector_ab9c25e0bf46af5299a014ff6e461e972}{Cylinder\+Detector}} ()
+\begin{DoxyCompactList}\small\item\em Constructor for the \mbox{\hyperlink{classCylinderDetector}{Cylinder\+Detector}} node. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Private Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{classCylinderDetector_a9436b075fb859638bbbb903cfc1afb92}{scan\+Callback}} (const sensor\+\_\+msgs\+::msg\+::\+Laser\+Scan\+::\+Shared\+Ptr scan\+\_\+msg)
+\begin{DoxyCompactList}\small\item\em Callback function used to process/use laser scan message data. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classCylinderDetector_ac36e7c9d946d2d31c39951dc859b2b40}{detect\+Cylinder\+Object}} (const std\+::vector$<$ double $>$ \&xs, const std\+::vector$<$ double $>$ \&ys)
+\begin{DoxyCompactList}\small\item\em Detects a cylinder from Cartesian coordinates and returns its index. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classCylinderDetector_a4cfe3d1141b9cc89231e1714ccf05fe5}{publish\+Cylinder\+Marker}} (double x, double y)
+\begin{DoxyCompactList}\small\item\em Publishes a cylinder visualisation\+\_\+msgs marker at (x,y) in RViz2. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classCylinderDetector_a28a2b1f7a378d7096de0c2d2f662749f}{publish\+Cylinder\+TF}} (double x, double y)
+\begin{DoxyCompactList}\small\item\em Broadcasts transform of the detected cylinder. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+std\+::shared\+\_\+ptr$<$ tf2\+\_\+ros\+::\+Transform\+Broadcaster $>$ \mbox{\hyperlink{classCylinderDetector_aab2d57e7f5e50619cc871b0dd900a0c2}{tf\+\_\+\+BC\+\_\+}}
+\begin{DoxyCompactList}\small\item\em base\+\_\+link to map transform broadcaster \end{DoxyCompactList}\item 
+rclcpp\+::\+Subscription$<$ sensor\+\_\+msgs\+::msg\+::\+Laser\+Scan $>$\+::Shared\+Ptr \mbox{\hyperlink{classCylinderDetector_af2de7c98746c6b498ebbfb56f3eaac98}{scan\+\_\+sub\+\_\+}}
+\begin{DoxyCompactList}\small\item\em Subscriber to /scan Laser\+Scan messages. \end{DoxyCompactList}\item 
+rclcpp\+::\+Publisher$<$ geometry\+\_\+msgs\+::msg\+::\+Pose\+Stamped $>$\+::Shared\+Ptr \mbox{\hyperlink{classCylinderDetector_a1c704d5648be7d42de0f167a97def996}{cyl\+\_\+pose\+\_\+pub\+\_\+}}
+\begin{DoxyCompactList}\small\item\em Publisher for Cylinder poses through geometry\+\_\+msgs Pose\+Stamped. \end{DoxyCompactList}\item 
+rclcpp\+::\+Publisher$<$ visualization\+\_\+msgs\+::msg\+::\+Marker $>$\+::Shared\+Ptr \mbox{\hyperlink{classCylinderDetector_ab06230dcb004ff5eef46adb63204aa25}{cyl\+\_\+marker\+\_\+pub\+\_\+}}
+\begin{DoxyCompactList}\small\item\em Publisher for Cylinder visualisation\+\_\+msgs markers. \end{DoxyCompactList}\item 
+tf2\+\_\+ros\+::\+Buffer \mbox{\hyperlink{classCylinderDetector_a1ca2c7ff3a43ead7259588c5a6c7bcd6}{tf\+\_\+buffer\+\_\+}}
+\begin{DoxyCompactList}\small\item\em Transform storage buffer. \end{DoxyCompactList}\item 
+tf2\+\_\+ros\+::\+Transform\+Listener \mbox{\hyperlink{classCylinderDetector_adfd458e868243157ffcc4408d3b00956}{tf\+\_\+listener\+\_\+}}
+\begin{DoxyCompactList}\small\item\em Incoming transform listener. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classCylinderDetector_a146b5d733b135286e24cfb7f05c1a0dc}{cyl\+Diameter\+\_\+}}
+\begin{DoxyCompactList}\small\item\em Known diameter of the placed cylinder obstacle. \end{DoxyCompactList}\item 
+double \mbox{\hyperlink{classCylinderDetector_a3eddc2a55df1dcecfac5fc01cfcf5461}{cyl\+Radius\+\_\+}}
+\begin{DoxyCompactList}\small\item\em Known radius of the placed cylinder obstacle. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Cylinder Detector ROS2 Node. 
+
+This class is a ROS2 node that allows a robot (turtlebot3) to detect 30cm cylinders.~\newline
+\begin{DoxyAuthor}{Author}
+Rhys Darcy 
+\end{DoxyAuthor}
+\begin{DoxyVersion}{Version}
+1.\+0 
+\end{DoxyVersion}
+\begin{DoxyDate}{Date}
+08/10/2024 
+\end{DoxyDate}
+\begin{DoxyRefDesc}{Bug}
+\item[\mbox{\hyperlink{bug__bug000001}{Bug}}]None found as of 08/10/2024 \end{DoxyRefDesc}
+\begin{DoxyWarning}{Warning}
+Will not work if gazebo and a map on RViz2 is not open 
+\end{DoxyWarning}
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classCylinderDetector_ab9c25e0bf46af5299a014ff6e461e972}\label{classCylinderDetector_ab9c25e0bf46af5299a014ff6e461e972}} 
+\index{CylinderDetector@{CylinderDetector}!CylinderDetector@{CylinderDetector}}
+\index{CylinderDetector@{CylinderDetector}!CylinderDetector@{CylinderDetector}}
+\doxysubsubsection{\texorpdfstring{CylinderDetector()}{CylinderDetector()}}
+{\footnotesize\ttfamily Cylinder\+Detector\+::\+Cylinder\+Detector (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Constructor for the \mbox{\hyperlink{classCylinderDetector}{Cylinder\+Detector}} node. 
+
+Initializes the node, sets up the laser scan subscriber, marker publisher, pose publisher, and transform broadcaster. It also initializes the cylinder\textquotesingle{}s size parameters which can be changed here to adjust for additinal sizes. 
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classCylinderDetector_ac36e7c9d946d2d31c39951dc859b2b40}\label{classCylinderDetector_ac36e7c9d946d2d31c39951dc859b2b40}} 
+\index{CylinderDetector@{CylinderDetector}!detectCylinderObject@{detectCylinderObject}}
+\index{detectCylinderObject@{detectCylinderObject}!CylinderDetector@{CylinderDetector}}
+\doxysubsubsection{\texorpdfstring{detectCylinderObject()}{detectCylinderObject()}}
+{\footnotesize\ttfamily int Cylinder\+Detector\+::detect\+Cylinder\+Object (\begin{DoxyParamCaption}\item[{const std\+::vector$<$ double $>$ \&}]{xs,  }\item[{const std\+::vector$<$ double $>$ \&}]{ys }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [private]}}
+
+
+
+Detects a cylinder from Cartesian coordinates and returns its index. 
+
+This function searches through vectors of Cartesian points from a laser scan and groups them into continuous clusters based on how close they are. If a cluster\textquotesingle{}s width is within a certain threshold of +-\/0.\+05m of the 0.\+3m cylinder, it is detected and its index is returned.
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\texttt{ in}}  & {\em xs} & vector of Cartesian x-\/coordinates \\
+\hline
+\mbox{\texttt{ in}}  & {\em ys} & vector of Cartesian y-\/coordinates\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Index of the cylinder in the Laser\+Scan 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classCylinderDetector_a4cfe3d1141b9cc89231e1714ccf05fe5}\label{classCylinderDetector_a4cfe3d1141b9cc89231e1714ccf05fe5}} 
+\index{CylinderDetector@{CylinderDetector}!publishCylinderMarker@{publishCylinderMarker}}
+\index{publishCylinderMarker@{publishCylinderMarker}!CylinderDetector@{CylinderDetector}}
+\doxysubsubsection{\texorpdfstring{publishCylinderMarker()}{publishCylinderMarker()}}
+{\footnotesize\ttfamily void Cylinder\+Detector\+::publish\+Cylinder\+Marker (\begin{DoxyParamCaption}\item[{double}]{x,  }\item[{double}]{y }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [private]}}
+
+
+
+Publishes a cylinder visualisation\+\_\+msgs marker at (x,y) in RViz2. 
+
+This function creates and publishes a cylinder marker at (x,y), which is the detected cylinder\textquotesingle{}s position. This position is also transformed from the robot\textquotesingle{}s base\+\_\+link frame to the map\textquotesingle{}s frame.
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\texttt{ in}}  & {\em x} & estimated x-\/coordinate of the cylinder object \\
+\hline
+\mbox{\texttt{ in}}  & {\em y} & estimated y-\/coordinate of the cylinder object \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classCylinderDetector_a28a2b1f7a378d7096de0c2d2f662749f}\label{classCylinderDetector_a28a2b1f7a378d7096de0c2d2f662749f}} 
+\index{CylinderDetector@{CylinderDetector}!publishCylinderTF@{publishCylinderTF}}
+\index{publishCylinderTF@{publishCylinderTF}!CylinderDetector@{CylinderDetector}}
+\doxysubsubsection{\texorpdfstring{publishCylinderTF()}{publishCylinderTF()}}
+{\footnotesize\ttfamily void Cylinder\+Detector\+::publish\+Cylinder\+TF (\begin{DoxyParamCaption}\item[{double}]{x,  }\item[{double}]{y }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [private]}}
+
+
+
+Broadcasts transform of the detected cylinder. 
+
+This function publishes a cylinder transform at (x,y) between the robot\textquotesingle{}s \char`\"{}base\+\_\+link\char`\"{} and the cylinder\textquotesingle{}s position to RViz2.
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\texttt{ in}}  & {\em x} & estimated x-\/coordinate of the cylinder object \\
+\hline
+\mbox{\texttt{ in}}  & {\em y} & estimated y-\/coordinate of the cylinder object \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classCylinderDetector_a9436b075fb859638bbbb903cfc1afb92}\label{classCylinderDetector_a9436b075fb859638bbbb903cfc1afb92}} 
+\index{CylinderDetector@{CylinderDetector}!scanCallback@{scanCallback}}
+\index{scanCallback@{scanCallback}!CylinderDetector@{CylinderDetector}}
+\doxysubsubsection{\texorpdfstring{scanCallback()}{scanCallback()}}
+{\footnotesize\ttfamily void Cylinder\+Detector\+::scan\+Callback (\begin{DoxyParamCaption}\item[{const sensor\+\_\+msgs\+::msg\+::\+Laser\+Scan\+::\+Shared\+Ptr}]{scan\+\_\+msg }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [private]}}
+
+
+
+Callback function used to process/use laser scan message data. 
+
+This function searches for cylinders in the robot\textquotesingle{}s general vicinity after receiving a Laser\+Scan through /scan. Once detected, the function will then publish a marker and broadcast a transform
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\texttt{ in}}  & {\em scan\+\_\+msg} & A message containing the most recent Laser\+Scan from /scan \\
+\hline
+\end{DoxyParams}
+
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classCylinderDetector_ab06230dcb004ff5eef46adb63204aa25}\label{classCylinderDetector_ab06230dcb004ff5eef46adb63204aa25}} 
+\index{CylinderDetector@{CylinderDetector}!cyl\_marker\_pub\_@{cyl\_marker\_pub\_}}
+\index{cyl\_marker\_pub\_@{cyl\_marker\_pub\_}!CylinderDetector@{CylinderDetector}}
+\doxysubsubsection{\texorpdfstring{cyl\_marker\_pub\_}{cyl\_marker\_pub\_}}
+{\footnotesize\ttfamily rclcpp\+::\+Publisher$<$visualization\+\_\+msgs\+::msg\+::\+Marker$>$\+::Shared\+Ptr Cylinder\+Detector\+::cyl\+\_\+marker\+\_\+pub\+\_\+\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Publisher for Cylinder visualisation\+\_\+msgs markers. 
+
+\mbox{\Hypertarget{classCylinderDetector_a1c704d5648be7d42de0f167a97def996}\label{classCylinderDetector_a1c704d5648be7d42de0f167a97def996}} 
+\index{CylinderDetector@{CylinderDetector}!cyl\_pose\_pub\_@{cyl\_pose\_pub\_}}
+\index{cyl\_pose\_pub\_@{cyl\_pose\_pub\_}!CylinderDetector@{CylinderDetector}}
+\doxysubsubsection{\texorpdfstring{cyl\_pose\_pub\_}{cyl\_pose\_pub\_}}
+{\footnotesize\ttfamily rclcpp\+::\+Publisher$<$geometry\+\_\+msgs\+::msg\+::\+Pose\+Stamped$>$\+::Shared\+Ptr Cylinder\+Detector\+::cyl\+\_\+pose\+\_\+pub\+\_\+\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Publisher for Cylinder poses through geometry\+\_\+msgs Pose\+Stamped. 
+
+\mbox{\Hypertarget{classCylinderDetector_a146b5d733b135286e24cfb7f05c1a0dc}\label{classCylinderDetector_a146b5d733b135286e24cfb7f05c1a0dc}} 
+\index{CylinderDetector@{CylinderDetector}!cylDiameter\_@{cylDiameter\_}}
+\index{cylDiameter\_@{cylDiameter\_}!CylinderDetector@{CylinderDetector}}
+\doxysubsubsection{\texorpdfstring{cylDiameter\_}{cylDiameter\_}}
+{\footnotesize\ttfamily double Cylinder\+Detector\+::cyl\+Diameter\+\_\+\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Known diameter of the placed cylinder obstacle. 
+
+\mbox{\Hypertarget{classCylinderDetector_a3eddc2a55df1dcecfac5fc01cfcf5461}\label{classCylinderDetector_a3eddc2a55df1dcecfac5fc01cfcf5461}} 
+\index{CylinderDetector@{CylinderDetector}!cylRadius\_@{cylRadius\_}}
+\index{cylRadius\_@{cylRadius\_}!CylinderDetector@{CylinderDetector}}
+\doxysubsubsection{\texorpdfstring{cylRadius\_}{cylRadius\_}}
+{\footnotesize\ttfamily double Cylinder\+Detector\+::cyl\+Radius\+\_\+\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Known radius of the placed cylinder obstacle. 
+
+\mbox{\Hypertarget{classCylinderDetector_af2de7c98746c6b498ebbfb56f3eaac98}\label{classCylinderDetector_af2de7c98746c6b498ebbfb56f3eaac98}} 
+\index{CylinderDetector@{CylinderDetector}!scan\_sub\_@{scan\_sub\_}}
+\index{scan\_sub\_@{scan\_sub\_}!CylinderDetector@{CylinderDetector}}
+\doxysubsubsection{\texorpdfstring{scan\_sub\_}{scan\_sub\_}}
+{\footnotesize\ttfamily rclcpp\+::\+Subscription$<$sensor\+\_\+msgs\+::msg\+::\+Laser\+Scan$>$\+::Shared\+Ptr Cylinder\+Detector\+::scan\+\_\+sub\+\_\+\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Subscriber to /scan Laser\+Scan messages. 
+
+\mbox{\Hypertarget{classCylinderDetector_aab2d57e7f5e50619cc871b0dd900a0c2}\label{classCylinderDetector_aab2d57e7f5e50619cc871b0dd900a0c2}} 
+\index{CylinderDetector@{CylinderDetector}!tf\_BC\_@{tf\_BC\_}}
+\index{tf\_BC\_@{tf\_BC\_}!CylinderDetector@{CylinderDetector}}
+\doxysubsubsection{\texorpdfstring{tf\_BC\_}{tf\_BC\_}}
+{\footnotesize\ttfamily std\+::shared\+\_\+ptr$<$tf2\+\_\+ros\+::\+Transform\+Broadcaster$>$ Cylinder\+Detector\+::tf\+\_\+\+BC\+\_\+\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+base\+\_\+link to map transform broadcaster 
+
+\mbox{\Hypertarget{classCylinderDetector_a1ca2c7ff3a43ead7259588c5a6c7bcd6}\label{classCylinderDetector_a1ca2c7ff3a43ead7259588c5a6c7bcd6}} 
+\index{CylinderDetector@{CylinderDetector}!tf\_buffer\_@{tf\_buffer\_}}
+\index{tf\_buffer\_@{tf\_buffer\_}!CylinderDetector@{CylinderDetector}}
+\doxysubsubsection{\texorpdfstring{tf\_buffer\_}{tf\_buffer\_}}
+{\footnotesize\ttfamily tf2\+\_\+ros\+::\+Buffer Cylinder\+Detector\+::tf\+\_\+buffer\+\_\+\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Transform storage buffer. 
+
+\mbox{\Hypertarget{classCylinderDetector_adfd458e868243157ffcc4408d3b00956}\label{classCylinderDetector_adfd458e868243157ffcc4408d3b00956}} 
+\index{CylinderDetector@{CylinderDetector}!tf\_listener\_@{tf\_listener\_}}
+\index{tf\_listener\_@{tf\_listener\_}!CylinderDetector@{CylinderDetector}}
+\doxysubsubsection{\texorpdfstring{tf\_listener\_}{tf\_listener\_}}
+{\footnotesize\ttfamily tf2\+\_\+ros\+::\+Transform\+Listener Cylinder\+Detector\+::tf\+\_\+listener\+\_\+\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Incoming transform listener. 
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+src/\mbox{\hyperlink{cylDet_8cpp}{cyl\+Det.\+cpp}}\end{DoxyCompactItemize}
